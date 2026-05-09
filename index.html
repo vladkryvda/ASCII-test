@@ -3,82 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASCII 3D Cube & Stars - The Mind Electric</title>
+    <title>ASCII 3D Cube - Isle Unto Thyself</title>
     <style>
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #000;
-            color: #fff;
-            font-family: 'Courier New', monospace;
-            /* Захист від виділення тексту */
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; background-color: #000;
+            color: #fff; font-family: 'Courier New', monospace;
+            /* Повний захист від виділення */
             user-select: none;
             -webkit-user-select: none;
             -moz-user-select: none;
-            -ms-user-select: none;
         }
 
         #starfield {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
         }
 
         #canvas-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
+            position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 1;
-            cursor: grab;
-            text-align: center;
+            z-index: 1; cursor: grab; text-align: center;
         }
 
-        #canvas-container:active {
-            cursor: grabbing;
-        }
+        #canvas-container:active { cursor: grabbing; }
 
         pre {
-            font-size: 10px;
-            line-height: 8px;
-            font-weight: bold;
-            background: transparent;
-            pointer-events: none; /* Текст не заважає клікам */
+            font-size: 11px; line-height: 9px; font-weight: bold;
+            background: transparent; pointer-events: none;
         }
 
         #overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 10; display: flex;
+            justify-content: center; align-items: center; cursor: pointer;
         }
 
         .btn {
-            padding: 15px 40px;
-            border: 1px solid #fff;
-            color: #fff;
-            background: none;
-            letter-spacing: 5px;
-            transition: 0.5s;
-            font-family: inherit;
+            padding: 15px 40px; border: 1px solid #fff; color: #fff;
+            background: none; letter-spacing: 5px; transition: 0.5s;
         }
 
-        .btn:hover {
-            background: #fff;
-            color: #000;
-            box-shadow: 0 0 30px #fff;
-        }
+        .btn:hover { background: #fff; color: #000; box-shadow: 0 0 30px #fff; }
     </style>
 </head>
 <body>
@@ -86,7 +52,7 @@
     <canvas id="starfield"></canvas>
 
     <div id="overlay" onclick="init()">
-        <div class="btn">INITIALIZE CUBE</div>
+        <div class="btn">INITIALIZE SYSTEM</div>
     </div>
 
     <div id="canvas-container">
@@ -96,7 +62,7 @@
     <div id="player" style="display:none"></div>
 
     <script>
-        /** МУЗИКА (YouTube API) **/
+        /** YOUTUBE API **/
         let player;
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
@@ -104,27 +70,25 @@
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
-                height: '0',
-                width: '0',
-                videoId: 'ojvldIzbaMo',
-                playerVars: {
-                    'autoplay': 0,
-                    'controls': 0,
-                    'start': 25 // Старт з 25 секунди
-                },
-                events: {
-                    'onReady': () => console.log("Audio Engine Ready")
-                }
+                height: '0', width: '0',
+                videoId: 'L2YvX3qcqZ4', // Isle Unto Thyself
+                playerVars: { 'autoplay': 0, 'controls': 0, 'start': 0 },
+                events: { 'onReady': () => console.log("Audio Engine Loaded") }
             });
         }
 
         function init() {
             document.getElementById('overlay').style.display = 'none';
-            if (player && player.playVideo) player.playVideo();
+            
+            // Затримка 0.5 секунди перед початком музики
+            setTimeout(() => {
+                if (player && player.playVideo) player.playVideo();
+            }, 500);
+
             renderCube();
         }
 
-        /** ЕФЕКТ ЗІРОК **/
+        /** ЗІРКИ **/
         const canvas = document.getElementById('starfield');
         const ctx = canvas.getContext('2d');
         let stars = [];
@@ -141,11 +105,10 @@
             init() {
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2;
+                this.size = Math.random() * 1.5;
                 this.alpha = 0;
-                this.fadeSpeed = Math.random() * 0.02 + 0.005;
+                this.fadeSpeed = Math.random() * 0.01 + 0.005;
                 this.fadingIn = true;
-                this.maxAlpha = Math.random() * 0.8 + 0.2;
             }
             draw() {
                 ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
@@ -156,7 +119,7 @@
             update() {
                 if (this.fadingIn) {
                     this.alpha += this.fadeSpeed;
-                    if (this.alpha >= this.maxAlpha) this.fadingIn = false;
+                    if (this.alpha >= 0.8) this.fadingIn = false;
                 } else {
                     this.alpha -= this.fadeSpeed;
                     if (this.alpha <= 0) this.init();
@@ -204,8 +167,8 @@
             let z = calculateZ(cubeX, cubeY, cubeZ) + 100;
 
             let ooz = 1 / z;
-            // Корекція пропорцій (2.2) для компенсації висоти рядка в консолі/pre
-            let xp = Math.floor(width / 2 + 40 * ooz * x * 2.2); 
+            // Посилена корекція для ідеальної пропорції куба (2.4)
+            let xp = Math.floor(width / 2 + 40 * ooz * x * 2.4); 
             let yp = Math.floor(height / 2 + 40 * ooz * y);
 
             let idx = xp + yp * width;
