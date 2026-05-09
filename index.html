@@ -3,134 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D ASCII Earth</title>
+    <title>ASCII 3D Cube & Stars - The Mind Electric</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; color: #fff; font-family: 'Courier New', monospace; user-select: none; }
-        #starfield { position: fixed; top: 0; left: 0; z-index: -1; }
-        #container { display: flex; justify-content: center; align-items: center; height: 100vh; cursor: grab; }
-        #container:active { cursor: grabbing; }
-        #ascii-render { font-size: 9px; line-height: 8px; white-space: pre; text-shadow: 0 0 5px rgba(0, 150, 255, 0.3); }
-        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .btn { padding: 15px 30px; border: 1px solid #00f; color: #00f; background: none; cursor: pointer; letter-spacing: 2px; transition: 0.3s; font-family: inherit; }
-        .btn:hover { background: #00f; color: #fff; box-shadow: 0 0 20px #00f; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            /* Захист від виділення тексту */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        #starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            cursor: grab;
+            text-align: center;
+        }
+
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+
+        pre {
+            font-size: 10px;
+            line-height: 8px;
+            font-weight: bold;
+            background: transparent;
+            pointer-events: none; /* Текст не заважає клікам */
+        }
+
+        #overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            border: 1px solid #fff;
+            color: #fff;
+            background: none;
+            letter-spacing: 5px;
+            transition: 0.5s;
+            font-family: inherit;
+        }
+
+        .btn:hover {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 0 30px #fff;
+        }
     </style>
 </head>
 <body>
 
-<canvas id="starfield"></canvas>
+    <canvas id="starfield"></canvas>
 
-<!-- Кнопка запуску -->
-<div id="overlay" onclick="init()">
-    <h1 style="font-weight: 100; letter-spacing: 10px; color: #00f;">EARTH SYSTEM</h1>
-    <button class="btn">INITIALIZE</button>
-</div>
+    <div id="overlay" onclick="init()">
+        <div class="btn">INITIALIZE CUBE</div>
+    </div>
 
-<div id="container">
-    <pre id="ascii-render"></pre>
-</div>
+    <div id="canvas-container">
+        <pre id="ascii-cube"></pre>
+    </div>
 
-<!-- Невидимий плеєр YouTube для музики -->
-<div id="player" style="display:none"></div>
+    <div id="player" style="display:none"></div>
 
-<script>
-let player;
-function onYouTubeIframeAPIReady() {
-    player = new YT.Player('player', {
-        height: '0', width: '0',
-        videoId: 'VJM7yWMG4eE',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'start': 0 },
-        events: { 'onReady': (e) => console.log("Audio Ready") }
-    });
-}
+    <script>
+        /** МУЗИКА (YouTube API) **/
+        let player;
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.body.appendChild(tag);
 
-function init() {
-    document.getElementById('overlay').style.display = 'none';
-    if (player && player.playVideo) player.playVideo();
-    render();
-}
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '0',
+                width: '0',
+                videoId: 'ojvldIzbaMo',
+                playerVars: {
+                    'autoplay': 0,
+                    'controls': 0,
+                    'start': 25 // Старт з 25 секунди
+                },
+                events: {
+                    'onReady': () => console.log("Audio Engine Ready")
+                }
+            });
+        }
 
-// Завантаження YouTube API
-const tag = document.createElement('script');
-tag.src = "https://www.youtube.com/iframe_api";
-document.body.appendChild(tag);
+        function init() {
+            document.getElementById('overlay').style.display = 'none';
+            if (player && player.playVideo) player.playVideo();
+            renderCube();
+        }
 
-const pre = document.getElementById('ascii-render');
-const width = 120, height = 60;
-const chars = " .:-=+*#%@";
+        /** ЕФЕКТ ЗІРОК **/
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
 
-let rotX = 0, rotY = 0;
-let isDragging = false, lastX, lastY;
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
 
-document.addEventListener('mousedown', e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
-document.addEventListener('mousemove', e => {
-    if (isDragging) {
-        rotY += (e.clientX - lastX) * 0.01;
-        rotX += (e.clientY - lastY) * 0.01;
-        lastX = e.clientX; lastY = e.clientY;
-    }
-});
-document.addEventListener('mouseup', () => isDragging = false);
-
-/** 3D МАТЕМАТИКА ЗЕМЛІ **/
-function render() {
-    let output = "";
-    let cx = Math.cos(rotY), sx = Math.sin(rotY);
-    let cy = Math.cos(rotX), sy = Math.sin(rotX);
-
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            let nx = (x - width / 2) / (width / 4);
-            let ny = (y - height / 2) / (height / 4) * 1.8;
-            
-            // Сфера: x^2 + y^2 + z^2 = r^2
-            let r2 = nx*nx + ny*ny;
-            if (r2 < 1.0) {
-                let nz = Math.sqrt(1.0 - r2); // Z-координата для об'єму
-
-                // Обертання
-                let rx = nx * cx + nz * sx;
-                let rz = -nx * sx + nz * cx;
-                let ry = ny * cy + rz * sy;
-                rz = -ny * sy + rz * cy;
-
-                // Генерація "материків" через шум (проста математика)
-                let lat = Math.acos(ry);
-                let lon = Math.atan2(rx, rz);
-                let land = Math.sin(lon * 5) * Math.cos(lat * 3) + Math.sin(lat * 10 + lon * 2);
-                
-                // Освітлення (Глибина)
-                let diff = Math.max(0.1, rz); 
-                let charIdx = Math.floor(diff * 9);
-                let char = chars[charIdx];
-
-                let color = "#0044ff"; // Океан
-                if (land > 0.3) color = "#00ff44"; // Суша
-                if (Math.abs(ry) > 0.85 && land > 0) color = "#ffffff"; // Полюси
-
-                output += `<span style="color:${color}">${char}</span>`;
-            } else {
-                output += " ";
+        class Star {
+            constructor() { this.init(); }
+            init() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2;
+                this.alpha = 0;
+                this.fadeSpeed = Math.random() * 0.02 + 0.005;
+                this.fadingIn = true;
+                this.maxAlpha = Math.random() * 0.8 + 0.2;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            update() {
+                if (this.fadingIn) {
+                    this.alpha += this.fadeSpeed;
+                    if (this.alpha >= this.maxAlpha) this.fadingIn = false;
+                } else {
+                    this.alpha -= this.fadeSpeed;
+                    if (this.alpha <= 0) this.init();
+                }
             }
         }
-        output += "\n";
-    }
 
-    pre.innerHTML = output;
-    if (!isDragging) rotY += 0.005; // Авто-обертання
-    requestAnimationFrame(render);
-}
+        for (let i = 0; i < 150; i++) stars.push(new Star());
 
-/** STARFIELD **/
-const sc = document.getElementById('starfield');
-const sctx = sc.getContext('2d');
-let stars = Array(200).fill().map(() => ({ x: Math.random(), y: Math.random(), s: Math.random() }));
-function drawStars() {
-    sc.width = window.innerWidth; sc.height = window.innerHeight;
-    sctx.fillStyle = "#fff";
-    stars.forEach(s => sctx.fillRect(s.x * sc.width, s.y * sc.height, s.s * 2, s.s * 2));
-}
-window.addEventListener('resize', drawStars);
-drawStars();
-</script>
+        function animateStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(star => { star.update(); star.draw(); });
+            requestAnimationFrame(animateStars);
+        }
+        animateStars();
+
+        /** 3D ASCII CUBE **/
+        const pre = document.getElementById('ascii-cube');
+        let A = 0, B = 0, C = 0;
+        let isDragging = false;
+        let lastMouseX, lastMouseY;
+
+        const width = 80, height = 40;
+        const zBuffer = new Float32Array(width * height);
+        const buffer = new Uint8Array(width * height);
+
+        function calculateX(i, j, k) {
+            return j * Math.sin(A) * Math.sin(B) * Math.cos(C) - k * Math.cos(A) * Math.sin(B) * Math.cos(C) +
+                j * Math.cos(A) * Math.sin(C) + k * Math.sin(A) * Math.sin(C) + i * Math.cos(B) * Math.cos(C);
+        }
+
+        function calculateY(i, j, k) {
+            return j * Math.cos(A) * Math.cos(C) + k * Math.sin(A) * Math.cos(C) -
+                j * Math.sin(A) * Math.sin(B) * Math.sin(C) + k * Math.cos(A) * Math.sin(B) * Math.sin(C) -
+                i * Math.cos(B) * Math.sin(C);
+        }
+
+        function calculateZ(i, j, k) {
+            return k * Math.cos(A) * Math.cos(B) - j * Math.sin(A) * Math.cos(B) + i * Math.sin(B);
+        }
+
+        function calculateForSurface(cubeX, cubeY, cubeZ, char) {
+            let x = calculateX(cubeX, cubeY, cubeZ);
+            let y = calculateY(cubeX, cubeY, cubeZ);
+            let z = calculateZ(cubeX, cubeY, cubeZ) + 100;
+
+            let ooz = 1 / z;
+            // Корекція пропорцій (2.2) для компенсації висоти рядка в консолі/pre
+            let xp = Math.floor(width / 2 + 40 * ooz * x * 2.2); 
+            let yp = Math.floor(height / 2 + 40 * ooz * y);
+
+            let idx = xp + yp * width;
+            if (idx >= 0 && idx < width * height) {
+                if (ooz > zBuffer[idx]) {
+                    zBuffer[idx] = ooz;
+                    buffer[idx] = char.charCodeAt(0);
+                }
+            }
+        }
+
+        function renderCube() {
+            buffer.fill(32);
+            zBuffer.fill(0);
+
+            for (let v = -20; v < 20; v += 0.6) {
+                for (let h = -20; h < 20; h += 0.6) {
+                    calculateForSurface(v, h, 20, '@');
+                    calculateForSurface(v, h, -20, '#');
+                    calculateForSurface(20, v, h, '$');
+                    calculateForSurface(-20, v, h, '~');
+                    calculateForSurface(v, 20, h, '!');
+                    calculateForSurface(v, -20, h, ';');
+                }
+            }
+
+            let output = "";
+            for (let i = 0; i < width * height; i++) {
+                output += String.fromCharCode(buffer[i]);
+                if (i % width === width - 1) output += "\n";
+            }
+            pre.innerHTML = output;
+
+            if (!isDragging) {
+                A += 0.015;
+                B += 0.015;
+            }
+
+            requestAnimationFrame(renderCube);
+        }
+
+        document.addEventListener('mousedown', e => {
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        document.addEventListener('mousemove', e => {
+            if (isDragging) {
+                let dx = e.clientX - lastMouseX;
+                let dy = e.clientY - lastMouseY;
+                B += dx * 0.01;
+                A -= dy * 0.01;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+        });
+
+        document.addEventListener('mouseup', () => isDragging = false);
+    </script>
 </body>
 </html>
